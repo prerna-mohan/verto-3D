@@ -78,7 +78,7 @@ console.log('res',res)
     car2 = res[1]
 }).catch(error => { console.error(error) });
 
-loader.load( 'fonts/helvetiker_bold.typeface.json', function ( font ) {
+loader.load( 'helvetiker_bold.typeface.json', function ( font ) {
 
     const color = new THREE.Color( 0x006699 );
 
