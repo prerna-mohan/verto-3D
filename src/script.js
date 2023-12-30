@@ -6,11 +6,10 @@ import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
 import { ShapeGeometry } from 'three/src/geometries/ShapeGeometry.js'
 import GUI from 'lil-gui'
 import { LoadingManager } from 'three'
-import { gsap } from 'gsap'
 import { TimelineMax } from 'gsap/gsap-core'
 
 
-const gui = new GUI()
+// const gui = new GUI()
 let car1, car2, car3, text, tag, initialPos, isLoaded = false, currentCycle = 0;
 const curve = new THREE.CatmullRomCurve3([
     new THREE.Vector3(-16.3, 0, -8.6),
@@ -30,7 +29,7 @@ const renderer = new THREE.WebGLRenderer({
 })
 renderer.shadowMap.enabled = true
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 0.7;
+renderer.toneMappingExposure = 0.6;
 // renderer.outputColorSpace = THREE.SRGBColorSpace
 renderer.shadowMap.type = THREE.PCFSoftShadowMap
 renderer.setSize(sizes.width, sizes.height)
@@ -52,15 +51,14 @@ const ambientLight = new THREE.AmbientLight(0xffffff, 0.7)
 scene.add(ambientLight)
 
 // Directional light
-const directionalLight = new THREE.DirectionalLight(0xffffff, 3)
+const directionalLight = new THREE.DirectionalLight(0xffffff, 4)
 directionalLight.castShadow = true
 directionalLight.position.multiplyScalar( 30 );
-directionalLight.shadow.bias = -0.00004;
-directionalLight.shadow.normalBias = 0.2;
+directionalLight.shadow.bias = 0.0001
 
 
-directionalLight.shadow.mapSize.width = 1024 * 2
-directionalLight.shadow.mapSize.height = 1024 * 2
+directionalLight.shadow.mapSize.width = 1024 * 4
+directionalLight.shadow.mapSize.height = 1024 * 4
 directionalLight.shadow.camera.near = 0
 directionalLight.shadow.camera.far = 3500
 directionalLight.shadow.camera.left = -50;
@@ -71,10 +69,10 @@ const helper = new THREE.CameraHelper(directionalLight.shadow.camera)
 // scene.add(helper)
 
 directionalLight.position.set(10, 10, -1)
-gui.add(directionalLight, 'intensity').min(0).max(3).step(0.001)
-gui.add(directionalLight.position, 'x').min(- 10).max(10).step(0.001)
-gui.add(directionalLight.position, 'y').min(- 10).max(10).step(0.001)
-gui.add(directionalLight.position, 'z').min(- 10).max(10).step(0.001)
+// gui.add(directionalLight, 'intensity').min(0).max(7).step(0.001)
+// gui.add(directionalLight.position, 'x').min(- 10).max(10).step(0.001)
+// gui.add(directionalLight.position, 'y').min(- 10).max(10).step(0.001)
+// gui.add(directionalLight.position, 'z').min(- 10).max(10).step(0.001)
 scene.add(directionalLight)
 
 /**
@@ -228,6 +226,10 @@ scene.add(camera)
 
 // Controls
 const controls = new OrbitControls(camera, canvas)
+controls.minPolarAngle = 0; // radians
+controls.maxPolarAngle = Math.PI/3;
+controls.minDistance = 10;
+controls.maxDistance = 60;
 controls.enableDamping = true
 
 /**
