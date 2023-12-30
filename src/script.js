@@ -11,7 +11,7 @@ import { TimelineMax } from 'gsap/gsap-core'
 
 
 // const gui = new GUI()
-let car1, car2, text, isLoaded = false, currentCycle = 0;
+let car1, car2, car3, text, tag, initialPos, isLoaded = false, currentCycle = 0;
 const curve = new THREE.CatmullRomCurve3([
     new THREE.Vector3(-16.3, 0, -8.6),
     new THREE.Vector3(-13.5, 0, -0.5),
@@ -68,21 +68,30 @@ const loadingManager = new LoadingManager();
 loadingManager.onLoad = () => {
     car1.castShadow = true
     car2.castShadow = true
+    car3.castShadow = true
+    car1.receiveShadow = true;
     car2.receiveShadow = true;
+    car3.receiveShadow = true;
 
 
     car1.scale.set(0.009, 0.009, 0.009)
     car2.scale.set(0.006, 0.007, 0.007)
+    car3.scale.set(0.6, 0.6, 0.6)
+
     car2.position.x = -16.3
     car2.position.z = -8.6
     car2.rotation.y = 0.3
 
+    // car3.position.set(16.7, 0, -4.44)
+
     car1.position.x = 1
     car1.position.z = -4
-    // gui.add(car1.position, 'x', -20, 20)
-    // gui.add(car1.position, 'z', -20, 20)
-    // gui.add(car1.rotation, 'y', -20, 20)
-    scene.add(car1, car2);
+    // gui.add(car3.position, 'x', -20, 40)
+    // gui.add(car3.position, 'z', -20, 40)
+    // gui.add(car3.rotation, 'y', -20, 40)
+    scene.add(car1, car2, car3);
+    initialPos = new THREE.Vector3(14, 0, -3.5)
+    car3.position.copy(initialPos);
     isLoaded = true;
     startExplicitAnimation()
 }
@@ -92,46 +101,57 @@ const loader = new FontLoader();
 Promise.all([
     fbxLoader.loadAsync('car1.fbx'),
     fbxLoader.loadAsync('car2.fbx'),
+    fbxLoader.loadAsync('car3.fbx'),
 ]).then((res) => {
 console.log('res',res)
     car1 = res[0]
     car2 = res[1]
+    car3 = res[2]
 }).catch(error => { console.error(error) });
 
 loader.load( 'helvetiker_bold.typeface.json', function ( font ) {
 
-    const color = new THREE.Color( 0x006699 );
+    const color = new THREE.Color( 0xb0c1d6 );
 
     const matDark = new THREE.MeshBasicMaterial( {
-        color: color,
-        side: THREE.DoubleSide
+        color: 0xb5b5b5,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.7,
     } );
 
     const matLite = new THREE.MeshBasicMaterial( {
         color: color,
-        transparent: true,
         opacity: 0.4,
         side: THREE.DoubleSide
     } );
 
     const message = 'Verto';
+    const tagline = 'Cross-Border Payments and FX Simplified'
 
     const shapes = font.generateShapes( message, 10 );
+    const tagShapes = font.generateShapes( tagline, 1 );
 
     const geometry = new ShapeGeometry( shapes );
+    const tagGeometry = new ShapeGeometry( tagShapes );
 
     geometry.computeBoundingBox();
+    tagGeometry.computeBoundingBox();
 
     const xMid = - 0.5 * ( geometry.boundingBox.max.x - geometry.boundingBox.min.x );
+    const xMidTag = - 0.5 * ( tagGeometry.boundingBox.max.x - tagGeometry.boundingBox.min.x );
 
     geometry.translate( xMid, 0, 0 );
+    tagGeometry.translate( xMidTag, -6, 0 );
 
     // make shape ( N.B. edge view not visible )
 
     text = new THREE.Mesh( geometry, matLite );
+    tag = new THREE.Mesh( tagGeometry, matDark );
     text.receiveShadow = true;
+    tag.rotation.x = - Math.PI * 0.5
     text.rotation.x = - Math.PI * 0.5
-    scene.add( text );
+    scene.add( text, tag );
 
 } );
 
@@ -225,8 +245,9 @@ const tick = () =>
 }
 
 tick()
-
+const radius = 2.8;
 function startAnimation(){
+    const elapsedSeconds = clock.getElapsedTime();
     const sine = Math.sin(clock.getElapsedTime()* Math.PI * 2 * 0.13)
     const elapsedTime = (sine+ 1) / 2;
     const currentCycleUpdated = Math.floor(elapsedTime);
@@ -244,6 +265,22 @@ function startAnimation(){
     }
     currentCycle = currentCycleUpdated;
 
+    //-----animate third car
+    
+    const angle = -elapsedSeconds; // You can adjust the speed by modifying this value
+    const newPosition = new THREE.Vector3(
+        Math.cos(angle) * radius + initialPos.x,
+        0,
+        Math.sin(angle) * radius + initialPos.z
+      );
+      const targetPosition = new THREE.Vector3(
+        Math.cos(angle + Math.PI / 11) * radius + initialPos.x,
+        0,
+        Math.sin(angle + Math.PI / 11) * radius + initialPos.z
+      );
+    car3.position.copy(newPosition);
+    car3.lookAt(targetPosition);
+    car3.up.set(0, -1, 0);
 }
 
 function startExplicitAnimation(){
