@@ -10,8 +10,13 @@ import { gsap } from 'gsap'
 import { TimelineMax } from 'gsap/gsap-core'
 
 
-const gui = new GUI()
-let car1, car2;
+// const gui = new GUI()
+let car1, car2, text, isLoaded = false, currentCycle = 0;
+const curve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(-16.3, 0, -8.6),
+    new THREE.Vector3(-13.5, 0, -0.5),
+    new THREE.Vector3(-10.7, 0, -8.6)
+  ]);
 
 // Canvas
 const canvas = document.querySelector('canvas.webgl')
@@ -54,17 +59,22 @@ material.color.setHex( 0xffffff );
  */
 const loadingManager = new LoadingManager();
 loadingManager.onLoad = () => {
+    car1.castShadow = true
+    car2.castShadow = true
     car1.scale.set(0.006, 0.006, 0.006)
-    car2.scale.set(0.004, 0.005, 0.005)
-    car2.position.x = 6.75
-    car2.position.z = -3.58
+    car2.scale.set(0.006, 0.007, 0.007)
+    car2.position.x = -16.3
+    car2.position.z = -8.6
+    car2.rotation.y = 0.3
+
     car1.position.x = 1.32
     car1.position.z = -3.8
-    gui.add(car2.position, 'x', 1, 10)
-    gui.add(car2.position, 'z', -10, 10)
-    gui.add(car2.rotation, 'y', -10, 10)
+    // gui.add(car2.position, 'x', -20, 20)
+    // gui.add(car2.position, 'z', -20, 20)
+    // gui.add(car2.rotation, 'y', -20, 20)
     scene.add(car1, car2);
-    startAnimation()
+    isLoaded = true;
+    // startAnimation()
 }
 const fbxLoader = new FBXLoader(loadingManager);
 const loader = new FontLoader();
@@ -108,18 +118,19 @@ loader.load( 'helvetiker_bold.typeface.json', function ( font ) {
 
     // make shape ( N.B. edge view not visible )
 
-    const text = new THREE.Mesh( geometry, matLite );
+    text = new THREE.Mesh( geometry, matLite );
     text.rotation.x = - Math.PI * 0.5
     scene.add( text );
 
 } );
 
 const plane = new THREE.Mesh(
-    new THREE.PlaneGeometry(100, 100),
+    new THREE.PlaneGeometry(500, 500),
     material
 )
 plane.rotation.x = - Math.PI * 0.5
 plane.position.y -= 0.1
+plane.receiveShadow = true;
 
 scene.add(plane)
 
@@ -176,19 +187,25 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
  * Animate
  */
 const clock = new THREE.Clock()
-camera.position.set(-0.14, 6, 9.2)
-gui.add(camera.position, 'x', -10, 10).name('camx')
-gui.add(camera.position, 'y', -10, 10).name('camy')
-gui.add(camera.position, 'z', -10, 10).name('camz')
+camera.position.set(0, 17, 0)
+camera.lookAt(0,0,-2)
+// gui.add(camera.rotation, 'x', -10, 10).name('lookatX')
+// gui.add(camera.rotation, 'y', -10, 10).name('lookaty')
+// gui.add(camera.rotation, 'z', -10, 10).name('lookatz')
+// gui.add(camera.position, 'x', -10, 10).name('camx')
+// gui.add(camera.position, 'y', -10, 50).name('camy')
+// gui.add(camera.position, 'z', -10, 20).name('camz')
 
 const tick = () =>
 {
     const elapsedTime = clock.getElapsedTime()
 
     // Update controls
-    controls.update()
+    // controls.update()
 
     // Render
+    if(isLoaded)
+        startAnimation()
     renderer.render(scene, camera)
 
     // Call tick again on the next frame
@@ -198,52 +215,43 @@ const tick = () =>
 tick()
 
 function startAnimation(){
+    const sine = Math.sin(clock.getElapsedTime()* Math.PI * 2 * 0.13)
+    const elapsedTime = (sine+ 1) / 2;
+    const currentCycleUpdated = Math.floor(elapsedTime);
+    const position = curve.getPointAt(elapsedTime % 1); // Ensure the animation loops
+    car2.position.copy(position);
 
-    let tl = new TimelineMax({
-        onReverseComplete: () => {
-            tl.restart()
-        },
-        onReverseCompleteParams:['{self}'],
-        onComplete:'complete',
-        onCompleteParams:['{self}']
-    });
+    // Set the sphere's orientation to face the next point on the path
+    const nextPoint = curve.getPointAt((elapsedTime + 0.01) % 1);
+    
+    currentCycle = currentCycleUpdated;
 
-    let t2 = new TimelineMax({
-        onReverseComplete: () => {
-            t2.restart()
-        },
-        onReverseCompleteParams:['{self}'],
-        onComplete:'complete',
-        onCompleteParams:['{self}']
-    });
+    // Perform actions during alternate cycles
+    if (currentCycle % 2 === 0) {
+        car2.lookAt(nextPoint)
+    }
+    else{
+        const oppositeDirection = new THREE.Vector3().copy(nextPoint).negate();
+        car2.lookAt(oppositeDirection)
+    }
 
-    tl.to(car1.position, {
-        z: 0.1,
-        duration:1,
-        ease: "Power3.easeInOut",
-        delay: 0.2,
-        onComplete: () => {
-            tl.reverse(0)
-        },
-    })
+    // let tl = new TimelineMax({
+    //     onReverseComplete: () => {
+    //         tl.restart()
+    //     },
+    //     onReverseCompleteParams:['{self}'],
+    //     onComplete:'complete',
+    //     onCompleteParams:['{self}']
+    // });
 
-    t2.to(car2.position, {
-        z: -1,
-        duration:1.3,
-        ease: "Power3.easeInOut",
-        delay: 0.2,
-        // onComplete: () => {
-        //     t2.reverse(0)
-        // },
-    })
-    .to(car2.rotation, {
-        y: 0.5,
-        duration:0.4,
-        ease: "Power3.easeInOut",
-        // del
-    }).to(car2.position, {
-        x: 7,
-        duration:0.3,
-        ease: "Power3.easeInOut",
-    })
+    // tl.to(car2.position, {
+    //     z: -1.7,
+    //     x: -14.3, 
+    //     duration:0.7,
+    //     ease: "Power3.easeInOut",
+    //     delay: 0.5,
+    //     // onComplete: () => {
+    //     //     tl.reverse(0)
+    //     // },
+    // })
 }
