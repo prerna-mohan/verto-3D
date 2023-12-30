@@ -37,7 +37,14 @@ const ambientLight = new THREE.AmbientLight(0xffffff, 1)
 scene.add(ambientLight)
 
 // Directional light
-const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5)
+const directionalLight = new THREE.DirectionalLight(0xffffff, 2.76)
+directionalLight.castShadow = true
+
+directionalLight.shadow.camera.left = - 100;
+directionalLight.shadow.camera.right = 100;
+directionalLight.shadow.camera.top = 100;
+directionalLight.shadow.camera.bottom = - 100;
+
 directionalLight.position.set(2, 4.477, - 1)
 // gui.add(directionalLight, 'intensity').min(0).max(3).step(0.001)
 // gui.add(directionalLight.position, 'x').min(- 5).max(5).step(0.001)
@@ -49,7 +56,7 @@ scene.add(directionalLight)
  * Materials
  */
 const material = new THREE.MeshStandardMaterial()
-material.roughness = 0.7
+material.roughness = 1
 material.color.setHex( 0xffffff );
 // gui.add(material, 'metalness').min(0).max(1).step(0.001)
 // gui.add(material, 'roughness').min(0).max(1).step(0.001)
@@ -61,20 +68,23 @@ const loadingManager = new LoadingManager();
 loadingManager.onLoad = () => {
     car1.castShadow = true
     car2.castShadow = true
-    car1.scale.set(0.006, 0.006, 0.006)
+    car2.receiveShadow = true;
+
+
+    car1.scale.set(0.009, 0.009, 0.009)
     car2.scale.set(0.006, 0.007, 0.007)
     car2.position.x = -16.3
     car2.position.z = -8.6
     car2.rotation.y = 0.3
 
-    car1.position.x = 1.32
-    car1.position.z = -3.8
-    // gui.add(car2.position, 'x', -20, 20)
-    // gui.add(car2.position, 'z', -20, 20)
-    // gui.add(car2.rotation, 'y', -20, 20)
+    car1.position.x = 1
+    car1.position.z = -4
+    // gui.add(car1.position, 'x', -20, 20)
+    // gui.add(car1.position, 'z', -20, 20)
+    // gui.add(car1.rotation, 'y', -20, 20)
     scene.add(car1, car2);
     isLoaded = true;
-    // startAnimation()
+    startExplicitAnimation()
 }
 const fbxLoader = new FBXLoader(loadingManager);
 const loader = new FontLoader();
@@ -119,6 +129,7 @@ loader.load( 'helvetiker_bold.typeface.json', function ( font ) {
     // make shape ( N.B. edge view not visible )
 
     text = new THREE.Mesh( geometry, matLite );
+    text.receiveShadow = true;
     text.rotation.x = - Math.PI * 0.5
     scene.add( text );
 
@@ -180,6 +191,7 @@ const renderer = new THREE.WebGLRenderer({
     canvas: canvas,
     antialias: true
 })
+renderer.shadowMap.enabled = true
 renderer.setSize(sizes.width, sizes.height)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
@@ -221,12 +233,8 @@ function startAnimation(){
     const position = curve.getPointAt(elapsedTime % 1); // Ensure the animation loops
     car2.position.copy(position);
 
-    // Set the sphere's orientation to face the next point on the path
     const nextPoint = curve.getPointAt((elapsedTime + 0.01) % 1);
     
-    currentCycle = currentCycleUpdated;
-
-    // Perform actions during alternate cycles
     if (currentCycle % 2 === 0) {
         car2.lookAt(nextPoint)
     }
@@ -234,24 +242,27 @@ function startAnimation(){
         const oppositeDirection = new THREE.Vector3().copy(nextPoint).negate();
         car2.lookAt(oppositeDirection)
     }
+    currentCycle = currentCycleUpdated;
 
-    // let tl = new TimelineMax({
-    //     onReverseComplete: () => {
-    //         tl.restart()
-    //     },
-    //     onReverseCompleteParams:['{self}'],
-    //     onComplete:'complete',
-    //     onCompleteParams:['{self}']
-    // });
+}
 
-    // tl.to(car2.position, {
-    //     z: -1.7,
-    //     x: -14.3, 
-    //     duration:0.7,
-    //     ease: "Power3.easeInOut",
-    //     delay: 0.5,
-    //     // onComplete: () => {
-    //     //     tl.reverse(0)
-    //     // },
-    // })
+function startExplicitAnimation(){
+    let tl = new TimelineMax({
+        onReverseComplete: () => {
+            tl.restart()
+        },
+        onReverseCompleteParams:['{self}'],
+        onComplete:'complete',
+        onCompleteParams:['{self}']
+    });
+
+    tl.to(car1.position, {
+        z: 0.2,
+        duration:2,
+        ease: "Power3.easeInOut",
+        delay: 0.2,
+        onComplete: () => {
+            tl.reverse(0)
+        },
+    })
 }
