@@ -11,6 +11,7 @@ import { TimelineMax } from 'gsap/gsap-core'
 
 
 const gui = new GUI()
+let car1, car2;
 
 // Canvas
 const canvas = document.querySelector('canvas.webgl')
@@ -68,10 +69,14 @@ loadingManager.onLoad = () => {
 const fbxLoader = new FBXLoader(loadingManager);
 const loader = new FontLoader();
 
-const [car1, car2] = await Promise.all([
+Promise.all([
     fbxLoader.loadAsync('car1.fbx'),
     fbxLoader.loadAsync('car2.fbx'),
-]).catch(error => { console.error(error) });
+]).then((res) => {
+console.log('res',res)
+    car1 = res[0]
+    car2 = res[1]
+}).catch(error => { console.error(error) });
 
 loader.load( 'fonts/helvetiker_bold.typeface.json', function ( font ) {
 
