@@ -10,7 +10,7 @@ import { gsap } from 'gsap'
 import { TimelineMax } from 'gsap/gsap-core'
 
 
-// const gui = new GUI()
+const gui = new GUI()
 let car1, car2, car3, text, tag, initialPos, isLoaded = false, currentCycle = 0;
 const curve = new THREE.CatmullRomCurve3([
     new THREE.Vector3(-16.3, 0, -8.6),
@@ -20,6 +20,21 @@ const curve = new THREE.CatmullRomCurve3([
 
 // Canvas
 const canvas = document.querySelector('canvas.webgl')
+const sizes = {
+    width: window.innerWidth,
+    height: window.innerHeight
+}
+const renderer = new THREE.WebGLRenderer({
+    canvas: canvas,
+    antialias: true
+})
+renderer.shadowMap.enabled = true
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.7;
+// renderer.outputColorSpace = THREE.SRGBColorSpace
+renderer.shadowMap.type = THREE.PCFSoftShadowMap
+renderer.setSize(sizes.width, sizes.height)
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
 // Scene
 const scene = new THREE.Scene()
@@ -32,32 +47,44 @@ scene.fog = new THREE.Fog(0xd2d4d2, 40, 100);
  * Lights
  */
 // Ambient light
-const ambientLight = new THREE.AmbientLight(0xffffff, 1)
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.7)
 // gui.add(ambientLight, 'intensity').min(0).max(3).step(0.001)
 scene.add(ambientLight)
 
 // Directional light
-const directionalLight = new THREE.DirectionalLight(0xffffff, 2.76)
+const directionalLight = new THREE.DirectionalLight(0xffffff, 3)
 directionalLight.castShadow = true
+directionalLight.position.multiplyScalar( 30 );
+directionalLight.shadow.bias = -0.00004;
+directionalLight.shadow.normalBias = 0.2;
 
-directionalLight.shadow.camera.left = - 100;
-directionalLight.shadow.camera.right = 100;
-directionalLight.shadow.camera.top = 100;
-directionalLight.shadow.camera.bottom = - 100;
 
-directionalLight.position.set(2, 4.477, - 1)
-// gui.add(directionalLight, 'intensity').min(0).max(3).step(0.001)
-// gui.add(directionalLight.position, 'x').min(- 5).max(5).step(0.001)
-// gui.add(directionalLight.position, 'y').min(- 5).max(5).step(0.001)
-// gui.add(directionalLight.position, 'z').min(- 5).max(5).step(0.001)
+directionalLight.shadow.mapSize.width = 1024 * 2
+directionalLight.shadow.mapSize.height = 1024 * 2
+directionalLight.shadow.camera.near = 0
+directionalLight.shadow.camera.far = 3500
+directionalLight.shadow.camera.left = -50;
+directionalLight.shadow.camera.right = 50;
+directionalLight.shadow.camera.top = 50;
+directionalLight.shadow.camera.bottom = -50;
+const helper = new THREE.CameraHelper(directionalLight.shadow.camera)
+// scene.add(helper)
+
+directionalLight.position.set(10, 10, -1)
+gui.add(directionalLight, 'intensity').min(0).max(3).step(0.001)
+gui.add(directionalLight.position, 'x').min(- 10).max(10).step(0.001)
+gui.add(directionalLight.position, 'y').min(- 10).max(10).step(0.001)
+gui.add(directionalLight.position, 'z').min(- 10).max(10).step(0.001)
 scene.add(directionalLight)
 
 /**
  * Materials
  */
-const material = new THREE.MeshStandardMaterial()
-material.roughness = 1
-material.color.setHex( 0xffffff );
+const material = new THREE.MeshStandardMaterial({
+    roughness: 1,
+    color: 0xffffff,
+    side: THREE.DoubleSide
+})
 // gui.add(material, 'metalness').min(0).max(1).step(0.001)
 // gui.add(material, 'roughness').min(0).max(1).step(0.001)
 
@@ -107,6 +134,14 @@ console.log('res',res)
     car1 = res[0]
     car2 = res[1]
     car3 = res[2]
+    res.forEach((item) => {
+        item.traverse(function (child) {
+            if (child.isMesh) {
+              child.castShadow = true;
+              child.material.clipShadows = true;
+            }
+         });
+    })
 }).catch(error => { console.error(error) });
 
 loader.load( 'helvetiker_bold.typeface.json', function ( font ) {
@@ -120,9 +155,10 @@ loader.load( 'helvetiker_bold.typeface.json', function ( font ) {
         opacity: 0.7,
     } );
 
-    const matLite = new THREE.MeshBasicMaterial( {
+    const matLite = new THREE.MeshStandardMaterial( {
         color: color,
-        opacity: 0.4,
+        opacity: 1,
+        roughness: 1,
         side: THREE.DoubleSide
     } );
 
@@ -165,16 +201,6 @@ plane.receiveShadow = true;
 
 scene.add(plane)
 
-
-
-/**
- * Sizes
- */
-const sizes = {
-    width: window.innerWidth,
-    height: window.innerHeight
-}
-
 window.addEventListener('resize', () =>
 {
     // Update sizes
@@ -203,17 +229,6 @@ scene.add(camera)
 // Controls
 const controls = new OrbitControls(camera, canvas)
 controls.enableDamping = true
-
-/**
- * Renderer
- */
-const renderer = new THREE.WebGLRenderer({
-    canvas: canvas,
-    antialias: true
-})
-renderer.shadowMap.enabled = true
-renderer.setSize(sizes.width, sizes.height)
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
 /**
  * Animate
